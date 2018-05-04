@@ -536,27 +536,27 @@ testRemove =
         ]
 
 
-testReplaceNode : Test
-testReplaceNode =
-    describe "replaceNode"
+testReplaceAt : Test
+testReplaceAt =
+    describe "replaceAt"
         [ testTree
-            |> replaceNode "node 2.2" (leaf "blah")
+            |> replaceAt "node 2.2" (leaf "blah")
             |> get "blah"
             |> Expect.equal (Just (leaf "blah"))
             |> asTest "should replace a node in the tree"
         , testTree
-            |> replaceNode "node 2" (node "node 2" [ leaf "blah" ])
+            |> replaceAt "node 2" (node "node 2" [ leaf "blah" ])
             |> get "node 2"
             |> Expect.equal (Just (node "node 2" [ leaf "blah" ]))
             |> asTest "should replace a node and children in the tree"
         ]
 
 
-testReplaceValue : Test
-testReplaceValue =
-    describe "replaceValue"
+testReplaceValueAt : Test
+testReplaceValueAt =
+    describe "replaceValueAt"
         [ testTree
-            |> replaceValue "node 2.2" "blah"
+            |> replaceValueAt "node 2.2" "blah"
             |> get "blah"
             |> Expect.equal (Just (leaf "blah"))
             |> asTest "should replace a node in the tree"
@@ -655,4 +655,24 @@ testTuple =
             |> Maybe.map (tuple testTree)
             |> Expect.equal (Just ( "node 2.2", Just "node 2" ))
             |> asTest "should map a nested node to a tuple"
+        ]
+
+
+testUpdateAt : Test
+testUpdateAt =
+    describe "updateAt"
+        [ node 1 [ node 2 [ leaf 3 ] ]
+            |> updateAt 3 (\node -> leaf (value node * 2))
+            |> Expect.equal (node 1 [ node 2 [ leaf 6 ] ])
+            |> asTest "should update a node at a given value"
+        ]
+
+
+testUpdateValueAt : Test
+testUpdateValueAt =
+    describe "updateValueAt"
+        [ node 1 [ leaf 2 ]
+            |> updateValueAt 1 (always 42)
+            |> Expect.equal (node 42 [ leaf 2 ])
+            |> asTest "should update a node value"
         ]

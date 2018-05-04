@@ -30,8 +30,10 @@ module Canopy
         , prepend
         , remove
         , refine
-        , replaceNode
+        , replaceAt
+        , replaceChildren
         , replaceValue
+        , replaceValueAt
         , seed
         , seek
         , siblings
@@ -39,35 +41,53 @@ module Canopy
         , sortWith
         , toList
         , tuple
-        , updateChildren
+        , updateAt
         , updateValue
+        , updateValueAt
         , value
         , values
         )
 
 {-| A generic [Rose Tree](https://en.wikipedia.org/wiki/Rose_tree).
 
+**Note:** This library is designed to work with unique values attached to tree nodes.
+This is usually achievable using records having a unique id, though unicity checks should
+be performed by consumers of this library.
+
 @docs Node
 
 
-# Building a Tree
+# Building a tree
 
 @docs node, leaf, append, prepend, remove, seed
 
 
-# Querying a Tree
+# Querying a tree
 
 @docs value, values, children, length, get, getAll, leaves, level, maximum, minimum, parent, path, seek, siblings
 
 
-# Manipulating a Tree
-
-@docs filter, flatMap, flatten, foldl, foldr, map, mapChildren, refine, replaceNode, replaceValue, sortBy, sortWith, updateChildren, updateValue, tuple
-
-
-# Checking a Tree
+# Checking a tree
 
 @docs all, any, member
+
+
+# Manipulating a tree
+
+
+## Single-level operations
+
+@docs replaceChildren, replaceValue, updateValue
+
+
+## Deep operations
+
+@docs replaceAt, replaceValueAt, updateAt , updateValueAt
+
+
+## Common operations
+
+@docs filter, flatMap, flatten, foldl, foldr, map, mapChildren, refine, sortBy, sortWith, tuple
 
 
 # Importing and exporting
@@ -140,7 +160,7 @@ any test node =
 append : a -> a -> Node a -> Node a
 append target child node =
     if target == value node then
-        node |> updateChildren (children node ++ [ leaf child ])
+        node |> replaceChildren (children node ++ [ leaf child ])
     else
         node |> mapChildren (append target child)
 
@@ -215,7 +235,7 @@ filter test tree =
                     |> List.filter (value >> test)
                     |> List.filterMap (filter test)
         in
-            tree |> updateChildren newChildren |> Just
+            tree |> replaceChildren newChildren |> Just
     else
         Nothing
 
@@ -547,7 +567,7 @@ path target rootNode =
 prepend : a -> a -> Node a -> Node a
 prepend target child node =
     if target == value node then
-        node |> updateChildren (leaf child :: children node)
+        node |> replaceChildren (leaf child :: children node)
     else
         node |> mapChildren (prepend target child)
 
@@ -622,33 +642,55 @@ refine test tree =
             |> List.foldl remove tree
 
 
-{-| Replace a Node in a Tree, if it exists.
+{-| Replace all Nodes holding a given value with a new Node in a Tree.
 
     node "root" [ node "foo" [ leaf "bar" ] ]
-        |> replaceNode "foo" (leaf "bar")
+        |> replaceAt "foo" (leaf "bar")
     --> node "root" [ leaf "bar" ]
 
+    node "root" [ leaf "foo", leaf "foo" ]
+        |> replaceAt "foo" (leaf "bar")
+    --> node "root" [ leaf "bar", leaf "bar" ]
+
 -}
-replaceNode : a -> Node a -> Node a -> Node a
-replaceNode target replacement root =
+replaceAt : a -> Node a -> Node a -> Node a
+replaceAt target replacement root =
     if value root == target then
         replacement
     else
-        root |> mapChildren (replaceNode target replacement)
+        root |> mapChildren (replaceAt target replacement)
 
 
-{-| Replace a Node value in a Tree.
+{-| Replace the children of a Node.
+-}
+replaceChildren : List (Node a) -> Node a -> Node a
+replaceChildren children (Node value _) =
+    Node value children
+
+
+{-| Replace the value of a Node.
+-}
+replaceValue : a -> Node a -> Node a
+replaceValue value (Node _ children) =
+    Node value children
+
+
+{-| Replace a target value with another one in a Tree.
 
     node "root" [ node "foo" [ leaf "bar" ] ]
-        |> replaceValue "foo" "baz"
+        |> replaceValueAt "foo" "baz"
     --> node "root" [ node "baz" [ leaf "bar" ] ]
 
+    node "root" [ leaf "foo", leaf "foo" ]
+        |> replaceValueAt "foo" "bar"
+    --> node "root" [ leaf "bar", leaf "bar" ]
+
 -}
-replaceValue : a -> a -> Node a -> Node a
-replaceValue target replacement root =
+replaceValueAt : a -> a -> Node a -> Node a
+replaceValueAt target replacement root =
     case get target root of
         Just node ->
-            root |> replaceNode target (updateValue replacement node)
+            root |> replaceAt target (replaceValue replacement node)
 
         Nothing ->
             root
@@ -754,18 +796,44 @@ tuple root node =
     ( value node, root |> parent (value node) |> Maybe.map value )
 
 
-{-| Update a Node's children.
+{-| Update a targetted Node in a tree, using an update function.
+
+    node 1 [ node 2 [ leaf 3 ] ]
+        |> updateAt 3 (always (leaf 42))
+    --> node 1 [ node 2 [ leaf 42 ] ]
+
 -}
-updateChildren : List (Node a) -> Node a -> Node a
-updateChildren children (Node value _) =
-    Node value children
+updateAt : a -> (Node a -> Node a) -> Node a -> Node a
+updateAt target update root =
+    if value root == target then
+        update root
+    else
+        root |> mapChildren (updateAt target update)
 
 
-{-| Update a Node value.
+{-| Update a Node value using an update function. This is especially useful for
+updating record properties.
+
+    leaf { name = "root" }
+        |> updateValue (\r -> { r | name = r.name ++ "!"})
+    --> leaf { name = "root!" }
+
 -}
-updateValue : a -> Node a -> Node a
-updateValue value (Node _ children) =
-    Node value children
+updateValue : (a -> a) -> Node a -> Node a
+updateValue update_ (Node value children) =
+    Node (update_ value) children
+
+
+{-| Update a targetted Node value in a tree, using an update function.
+
+    node 1 [ node 2 [ leaf 3 ] ]
+        |> updateValueAt 3 ((*) 2)
+    --> node 1 [ node 2 [ leaf 6 ] ]
+
+-}
+updateValueAt : a -> (a -> a) -> Node a -> Node a
+updateValueAt target update root =
+    root |> updateAt target (updateValue update)
 
 
 {-| Extracts the value of a Node.
