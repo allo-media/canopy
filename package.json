@@ -1,0 +1,19 @@
+{
+  "name": "canopy",
+  "version": "1.0.0",
+  "description": "An Elm tree library.",
+  "private": true,
+  "scripts": {
+    "install": "elm-package install -y",
+    "test": "elm-doc-test && elm-test"
+  },
+  "author": "Allo-Media <contact@allo-media.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "elm": "^0.18.0",
+    "elm-analyse": "^0.14.2",
+    "elm-doc-test": "^4.0.0",
+    "elm-format": "^0.6.1-alpha",
+    "elm-test": "^0.18.12"
+  }
+}
