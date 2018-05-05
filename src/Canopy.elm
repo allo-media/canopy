@@ -54,6 +54,11 @@ module Canopy
 This is usually achievable using records having a unique id, though unicity checks should
 be performed by consumers of this library.
 
+TODO:
+
+  - append, appendAt, appendNode, appendNodeAt
+  - prepend, prependAt, prependNode, prependNodeAt
+
 @docs Node
 
 
@@ -130,8 +135,8 @@ type Node a
 
 -}
 all : (a -> Bool) -> Node a -> Bool
-all test node =
-    node |> values |> List.all test
+all test =
+    values >> List.all test
 
 
 {-| Check that any value satisfy a test in a tree.
@@ -146,8 +151,8 @@ all test node =
 
 -}
 any : (a -> Bool) -> Node a -> Bool
-any test node =
-    node |> values |> List.any test
+any test =
+    values >> List.any test
 
 
 {-| Append a new value to a Node identified by its value in a Tree.
@@ -271,8 +276,8 @@ flatMap mapper tree =
 
 -}
 flatten : Node a -> List (Node a)
-flatten node =
-    node |> flatMap identity
+flatten =
+    flatMap identity
 
 
 {-| Reduce all tree values from top to bottom, left to right.
@@ -291,8 +296,8 @@ flatten node =
 
 -}
 foldl : (a -> b -> b) -> b -> Node a -> b
-foldl fn acc node =
-    node |> values |> List.foldl fn acc
+foldl fn acc =
+    values >> List.foldl fn acc
 
 
 {-| Reduce all tree values from top to bottom, right to left.
@@ -307,8 +312,8 @@ foldl fn acc node =
 
 -}
 foldr : (a -> b -> b) -> b -> Node a -> b
-foldr fn acc node =
-    node |> values |> List.foldr fn acc
+foldr fn acc =
+    values >> List.foldr fn acc
 
 
 {-| Build a tree from a list of hierarchy descriptors, which are tuples of value
@@ -349,8 +354,8 @@ from the left.
 
 -}
 get : a -> Node a -> Maybe (Node a)
-get target node =
-    node |> getAll target |> List.head
+get target =
+    getAll target >> List.head
 
 
 {-| Get all nodes containing the provided value.
@@ -361,8 +366,8 @@ get target node =
 
 -}
 getAll : a -> Node a -> List (Node a)
-getAll target node =
-    node |> flatten |> List.filter (value >> (==) target)
+getAll target =
+    flatten >> List.filter (value >> (==) target)
 
 
 {-| Create a node having no children (singleton).
@@ -388,8 +393,8 @@ leaf value =
 
 -}
 leaves : Node a -> List a
-leaves tree =
-    tree |> flatten |> List.filter (children >> (==) []) |> List.map value
+leaves =
+    flatten >> List.filter (children >> (==) []) >> List.map value
 
 
 {-| Count nodes in a tree.
@@ -400,8 +405,8 @@ leaves tree =
 
 -}
 length : Node a -> Int
-length node =
-    foldl (\_ x -> x + 1) 0 node
+length =
+    foldl (\_ x -> x + 1) 0
 
 
 {-| Retrieve all nodes at a given level in the tree.
@@ -426,11 +431,11 @@ length node =
 
 -}
 level : Int -> Node a -> List (Node a)
-level lvl node =
+level lvl =
     if lvl <= 0 then
-        [ node ]
+        List.singleton
     else
-        node |> children |> List.map (level (lvl - 1)) |> List.concat
+        children >> List.map (level (lvl - 1)) >> List.concat
 
 
 {-| Map all node values in a Tree.
@@ -704,8 +709,8 @@ replaceValueAt target replacement root =
 
 -}
 seek : (a -> Bool) -> Node a -> List (Node a)
-seek test node =
-    node |> flatten |> List.filter (value >> test)
+seek test =
+    flatten >> List.filter (value >> test)
 
 
 {-| Seed a tree.
@@ -832,11 +837,15 @@ updateValue update_ (Node value children) =
 
 -}
 updateValueAt : a -> (a -> a) -> Node a -> Node a
-updateValueAt target update root =
-    root |> updateAt target (updateValue update)
+updateValueAt target update =
+    updateAt target (updateValue update)
 
 
-{-| Extracts the value of a Node.
+{-| Extract the value of a Node.
+
+    leaf 2 |> value
+    --> 2
+
 -}
 value : Node a -> a
 value (Node value _) =
@@ -851,5 +860,5 @@ value (Node value _) =
 
 -}
 values : Node a -> List a
-values node =
-    node |> flatten |> List.map value
+values =
+    flatten >> List.map value
