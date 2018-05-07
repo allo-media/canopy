@@ -21,6 +21,7 @@ module Canopy
         , level
         , map
         , mapChildren
+        , mapChildrenAt
         , maximum
         , minimum
         , member
@@ -32,6 +33,7 @@ module Canopy
         , refine
         , replaceAt
         , replaceChildren
+        , replaceChildrenAt
         , replaceValue
         , replaceValueAt
         , seed
@@ -58,6 +60,7 @@ TODO:
 
   - append, appendAt, appendNode, appendNodeAt
   - prepend, prependAt, prependNode, prependNodeAt
+  - filterAt
 
 @docs Node
 
@@ -82,17 +85,17 @@ TODO:
 
 ## Single-level operations
 
-@docs replaceChildren, replaceValue, updateValue
+@docs mapChildren, replaceChildren, replaceValue, updateValue
 
 
 ## Deep operations
 
-@docs replaceAt, replaceValueAt, updateAt , updateValueAt
+@docs mapChildrenAt, replaceAt, replaceChildrenAt, replaceValueAt, updateAt , updateValueAt
 
 
 ## Common operations
 
-@docs filter, flatMap, flatten, foldl, foldr, map, mapChildren, refine, sortBy, sortWith, tuple
+@docs filter, flatMap, flatten, foldl, foldr, map, refine, sortBy, sortWith, tuple
 
 
 # Importing and exporting
@@ -438,7 +441,7 @@ level lvl =
         children >> List.map (level (lvl - 1)) >> List.concat
 
 
-{-| Map all node values in a Tree.
+{-| Map all Node values in a Tree.
 
     node "root" [ leaf "foo", node "bar" [ leaf "baz" ] ]
         |> map String.toUpper
@@ -450,7 +453,7 @@ map mapper (Node value children) =
     Node (mapper value) (children |> List.map (map mapper))
 
 
-{-| Map a node's children.
+{-| Map a Node's children.
 
     node "root" [ leaf "foo", leaf "bar" ]
         |> mapChildren (map String.toUpper)
@@ -460,6 +463,23 @@ map mapper (Node value children) =
 mapChildren : (Node a -> Node a) -> Node a -> Node a
 mapChildren mapper (Node value children) =
     Node value (List.map mapper children)
+
+
+{-| Map a targetted Node's children in a tree.
+
+    node 1 [ node 2 [ leaf 3, leaf 4 ] ]
+        |> mapChildrenAt 2 (updateValue ((*) 2))
+    --> node 1 [ node 2 [ leaf 6, leaf 8 ] ]
+
+-}
+mapChildrenAt : a -> (Node a -> Node a) -> Node a -> Node a
+mapChildrenAt target mapper root =
+    case get target root of
+        Just node ->
+            root |> replaceAt target (mapChildren mapper node)
+
+        Nothing ->
+            root
 
 
 {-| Compute the maximum value appearing in a tree.
@@ -673,6 +693,23 @@ replaceChildren children (Node value _) =
     Node value children
 
 
+{-| Replace a targetted Node's children in a tree.
+
+    node 1 [ node 2 [ leaf 3, leaf 4 ] ]
+        |> replaceChildrenAt 2 [ leaf 5 ]
+    --> node 1 [ node 2 [ leaf 5 ] ]
+
+-}
+replaceChildrenAt : a -> List (Node a) -> Node a -> Node a
+replaceChildrenAt target children root =
+    case get target root of
+        Just node ->
+            root |> replaceAt target (replaceChildren children node)
+
+        Nothing ->
+            root
+
+
 {-| Replace the value of a Node.
 -}
 replaceValue : a -> Node a -> Node a
@@ -680,7 +717,7 @@ replaceValue value (Node _ children) =
     Node value children
 
 
-{-| Replace a target value with another one in a Tree.
+{-| Replace a targetted Node value with another one in a Tree.
 
     node "root" [ node "foo" [ leaf "bar" ] ]
         |> replaceValueAt "foo" "baz"
