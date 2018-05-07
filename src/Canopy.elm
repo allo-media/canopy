@@ -56,12 +56,6 @@ module Canopy
 This is usually achievable using records having a unique id, though unicity checks should
 be performed by consumers of this library.
 
-TODO:
-
-  - append, appendAt, appendNode, appendNodeAt
-  - prepend, prependAt, prependNode, prependNodeAt
-  - filterAt
-
 @docs Node
 
 
