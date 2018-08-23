@@ -160,11 +160,11 @@ any test =
 
 -}
 append : a -> a -> Node a -> Node a
-append target child node =
-    if target == value node then
-        node |> replaceChildren (children node ++ [ leaf child ])
+append target child n =
+    if target == value n then
+        n |> replaceChildren (children n ++ [ leaf child ])
     else
-        node |> mapChildren (append target child)
+        n |> mapChildren (append target child)
 
 
 {-| Extracts the children of a Node.
@@ -175,8 +175,8 @@ append target child node =
 
 -}
 children : Node a -> List (Node a)
-children (Node _ children) =
-    children
+children (Node _ c) =
+    c
 
 
 {-| A JSON Node decoder. You must specify a decoder for values.
@@ -208,10 +208,10 @@ decode decodeDatum =
 
 -}
 encode : (a -> Encode.Value) -> Node a -> Encode.Value
-encode valueEncoder (Node value children) =
+encode valueEncoder (Node v c) =
     Encode.object
-        [ ( "value", valueEncoder value )
-        , ( "children", children |> List.map (encode valueEncoder) |> Encode.list )
+        [ ( "value", valueEncoder v )
+        , ( "children", Encode.list (encode valueEncoder) c )
         ]
 
 
@@ -252,10 +252,10 @@ filter test tree =
 flatMap : (Node a -> b) -> Node a -> List b
 flatMap mapper tree =
     List.foldl
-        (\node acc ->
+        (\n acc ->
             acc
-                ++ mapper node
-                :: (children node |> List.map (flatMap mapper) |> List.concat)
+                ++ mapper n
+                :: (children n |> List.map (flatMap mapper) |> List.concat)
         )
         [ mapper tree ]
         (children tree)
@@ -330,9 +330,9 @@ fromList nodes =
         Just ( root, Nothing ) ->
             nodes
                 |> List.foldl
-                    (\( value, maybeParent ) acc ->
+                    (\( v, maybeParent ) acc ->
                         maybeParent
-                            |> Maybe.map (\parent -> append parent value acc)
+                            |> Maybe.map (\p -> append p v acc)
                             |> Maybe.withDefault acc
                     )
                     (leaf root)
@@ -374,8 +374,8 @@ getAll target =
 
 -}
 leaf : a -> Node a
-leaf value =
-    Node value []
+leaf v =
+    Node v []
 
 
 {-| Retrieve all leaves (singletons) from a tree.
@@ -443,8 +443,8 @@ level lvl =
 
 -}
 map : (a -> b) -> Node a -> Node b
-map mapper (Node value children) =
-    Node (mapper value) (children |> List.map (map mapper))
+map mapper (Node v c) =
+    Node (mapper v) (c |> List.map (map mapper))
 
 
 {-| Map a Node's children.
@@ -455,8 +455,8 @@ map mapper (Node value children) =
 
 -}
 mapChildren : (Node a -> Node a) -> Node a -> Node a
-mapChildren mapper (Node value children) =
-    Node value (List.map mapper children)
+mapChildren mapper (Node v c) =
+    Node v (List.map mapper c)
 
 
 {-| Map a targetted Node's children in a tree.
@@ -469,8 +469,8 @@ mapChildren mapper (Node value children) =
 mapChildrenAt : a -> (Node a -> Node a) -> Node a -> Node a
 mapChildrenAt target mapper root =
     case get target root of
-        Just node ->
-            root |> replaceAt target (mapChildren mapper node)
+        Just n ->
+            root |> replaceAt target (mapChildren mapper n)
 
         Nothing ->
             root
@@ -484,8 +484,8 @@ mapChildrenAt target mapper root =
 
 -}
 maximum : Node comparable -> comparable
-maximum node =
-    node |> values |> List.maximum |> Maybe.withDefault (value node)
+maximum n =
+    n |> values |> List.maximum |> Maybe.withDefault (value n)
 
 
 {-| Compute the minimum value appearing in a tree.
@@ -496,8 +496,8 @@ maximum node =
 
 -}
 minimum : Node comparable -> comparable
-minimum node =
-    node |> values |> List.minimum |> Maybe.withDefault (value node)
+minimum n =
+    n |> values |> List.minimum |> Maybe.withDefault (value n)
 
 
 {-| Check if a tree contains a value.
@@ -512,8 +512,8 @@ minimum node =
 
 -}
 member : a -> Node a -> Bool
-member target node =
-    node |> get target |> Maybe.map (always True) |> Maybe.withDefault False
+member target =
+    get target >> Maybe.map (always True) >> Maybe.withDefault False
 
 
 {-| Create a Node. Basically just an alias for the `Node` constructor.
@@ -535,16 +535,16 @@ parent target candidate =
     candidate
         |> children
         |> List.foldl
-            (\node acc ->
+            (\n acc ->
                 case acc of
                     Just found ->
                         Just found
 
                     Nothing ->
-                        if value node == target then
+                        if value n == target then
                             Just candidate
                         else
-                            parent target node
+                            parent target n
             )
             Nothing
 
@@ -569,8 +569,8 @@ path target rootNode =
         ( Just found, Nothing ) ->
             [ found ]
 
-        ( Just found, Just parent ) ->
-            path (value parent) rootNode ++ [ found ]
+        ( Just found, Just p ) ->
+            path (value p) rootNode ++ [ found ]
 
         _ ->
             []
@@ -584,11 +584,11 @@ path target rootNode =
 
 -}
 prepend : a -> a -> Node a -> Node a
-prepend target child node =
-    if target == value node then
-        node |> replaceChildren (leaf child :: children node)
+prepend target child n =
+    if target == value n then
+        n |> replaceChildren (leaf child :: children n)
     else
-        node |> mapChildren (prepend target child)
+        n |> mapChildren (prepend target child)
 
 
 {-| Deletes all occurrences of a value from a tree.
@@ -652,11 +652,11 @@ refine test tree =
         toPreserve =
             tree
                 |> seek test
-                |> List.map (\(Node val _) -> tree |> path val |> List.map value)
+                |> List.map (\(Node v _) -> tree |> path v |> List.map value)
                 |> List.concat
     in
         toDelete
-            |> List.filter (\(Node value _) -> List.member value toPreserve |> not)
+            |> List.filter (\(Node v _) -> List.member v toPreserve |> not)
             |> List.map value
             |> List.foldl remove tree
 
@@ -683,8 +683,8 @@ replaceAt target replacement root =
 {-| Replace the children of a Node.
 -}
 replaceChildren : List (Node a) -> Node a -> Node a
-replaceChildren children (Node value _) =
-    Node value children
+replaceChildren c (Node v _) =
+    Node v c
 
 
 {-| Replace a targetted Node's children in a tree.
@@ -695,10 +695,10 @@ replaceChildren children (Node value _) =
 
 -}
 replaceChildrenAt : a -> List (Node a) -> Node a -> Node a
-replaceChildrenAt target children root =
+replaceChildrenAt target c root =
     case get target root of
-        Just node ->
-            root |> replaceAt target (replaceChildren children node)
+        Just n ->
+            root |> replaceAt target (replaceChildren c n)
 
         Nothing ->
             root
@@ -707,8 +707,8 @@ replaceChildrenAt target children root =
 {-| Replace the value of a Node.
 -}
 replaceValue : a -> Node a -> Node a
-replaceValue value (Node _ children) =
-    Node value children
+replaceValue v (Node _ c) =
+    Node v c
 
 
 {-| Replace a targetted Node value with another one in a Tree.
@@ -725,8 +725,8 @@ replaceValue value (Node _ children) =
 replaceValueAt : a -> a -> Node a -> Node a
 replaceValueAt target replacement root =
     case get target root of
-        Just node ->
-            root |> replaceAt target (replaceValue replacement node)
+        Just n ->
+            root |> replaceAt target (replaceValue replacement n)
 
         Nothing ->
             root
@@ -772,8 +772,8 @@ seed seeder init =
 siblings : a -> Node a -> List (Node a)
 siblings target tree =
     case parent target tree of
-        Just (Node _ children) ->
-            children |> List.filter (value >> (/=) target)
+        Just (Node _ c) ->
+            c |> List.filter (value >> (/=) target)
 
         Nothing ->
             []
@@ -787,11 +787,11 @@ siblings target tree =
 
 -}
 sortBy : (a -> comparable) -> Node a -> Node a
-sortBy sorter (Node val children) =
-    children
+sortBy sorter (Node v c) =
+    c
         |> List.sortBy (value >> sorter)
         |> List.map (sortBy sorter)
-        |> Node val
+        |> Node v
 
 
 {-| Recursively sort node children from a tree using a comparator.
@@ -802,11 +802,11 @@ sortBy sorter (Node val children) =
 
 -}
 sortWith : (a -> a -> Order) -> Node a -> Node a
-sortWith comparator (Node val children) =
-    children
+sortWith comparator (Node v c) =
+    c
         |> List.sortWith (\a b -> comparator (value a) (value b))
         |> List.map (sortWith comparator)
-        |> Node val
+        |> Node v
 
 
 {-| Turn a tree of node into a list of tuples.
@@ -821,15 +821,15 @@ sortWith comparator (Node val children) =
 
 -}
 toList : Node a -> List ( a, Maybe a )
-toList node =
-    node |> flatMap (tuple node)
+toList n =
+    n |> flatMap (tuple n)
 
 
 {-| Turn a Node into a tuple containing the value and the parent value, if any.
 -}
 tuple : Node a -> Node a -> ( a, Maybe a )
-tuple root node =
-    ( value node, root |> parent (value node) |> Maybe.map value )
+tuple root n =
+    ( value n, root |> parent (value n) |> Maybe.map value )
 
 
 {-| Update a targetted Node in a tree, using an update function.
@@ -856,8 +856,8 @@ updating record properties.
 
 -}
 updateValue : (a -> a) -> Node a -> Node a
-updateValue update_ (Node value children) =
-    Node (update_ value) children
+updateValue update_ (Node v c) =
+    Node (update_ v) c
 
 
 {-| Update a targetted Node value in a tree, using an update function.
@@ -879,8 +879,8 @@ updateValueAt target update =
 
 -}
 value : Node a -> a
-value (Node value _) =
-    value
+value (Node v _) =
+    v
 
 
 {-| List all the values in a tree.
