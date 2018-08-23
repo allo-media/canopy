@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "install": "elm make",
-    "test": "elm-doc-test && elm-test"
+    "test": "elm-doc-test && elm-test --compiler ./node_modules/.bin/elm"
   },
   "author": "Allo-Media <contact@allo-media.net>",
   "license": "MIT",

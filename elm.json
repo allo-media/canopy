@@ -3,7 +3,7 @@
     "name": "allo-media/canopy",
     "summary": "A Generic Tree API.",
     "license": "MIT",
-    "version": "4.0.0",
+    "version": "1.0.0",
     "exposed-modules": [
         "Canopy"
     ],
