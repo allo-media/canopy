@@ -50,9 +50,3 @@ jobs:
 
       - store_test_results:
           path: test-reports/
-
-workflows:
-  version: 2
-  build-all:
-    jobs:
-      - build
