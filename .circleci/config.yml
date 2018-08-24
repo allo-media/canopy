@@ -25,18 +25,6 @@ jobs:
           command: |
             npm install
 
-      - run:
-          name: Make build faster!
-          command: |
-            if [ ! -d sysconfcpus/bin ];
-            then
-              git clone https://github.com/obmarg/libsysconfcpus.git;
-              cd libsysconfcpus;
-              ./configure --prefix=/tmp/sysconfcpus;
-              make && make install;
-              cd ..;
-            fi
-
       - save_cache:
           paths:
             - node_modules
@@ -53,7 +41,7 @@ jobs:
           working_directory: .
           command: |
             mkdir -p test-reports
-            /tmp/sysconfcpus/bin/sysconfcpus -n 2 npm test
+            npm test
 
       - store_artifacts:
           path: test-reports/
