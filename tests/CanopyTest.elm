@@ -159,11 +159,11 @@ testFilter =
             |> Expect.equal Nothing
             |> asTest "should filter out a non-matching root node"
         , node 2 [ leaf 3, leaf 4 ]
-            |> filter (\x -> x % 2 == 0)
+            |> filter (\x -> modBy 2 x == 0)
             |> Expect.equal (Just (node 2 [ leaf 4 ]))
             |> asTest "should filter a simple tree"
         , node 2 [ leaf 3, leaf 4, node 5 [ leaf 6 ] ]
-            |> filter (\x -> x % 2 == 0)
+            |> filter (\x -> modBy 2 x == 0)
             |> Expect.equal (Just (node 2 [ leaf 4 ]))
             |> asTest "should filter a deep tree"
         ]

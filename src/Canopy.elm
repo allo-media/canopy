@@ -223,7 +223,7 @@ including root, hence the resulting Maybe.
     --> Nothing
 
     node 2 [ leaf 3, leaf 4 ]
-        |> filter (\x -> x % 2 == 0)
+        |> filter (\x -> modBy 2 x == 0)
     --> Just (node 2 [ leaf 4 ])
 
 -}
@@ -631,7 +631,7 @@ always kept.
                 ]
             ]
         ]
-        |> refine (\x -> x % 2 == 0)
+        |> refine (\x -> modBy 2 x == 0)
     --> node 2
     -->    [ node 4
     -->        [ leaf 6
