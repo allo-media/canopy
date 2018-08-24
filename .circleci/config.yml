@@ -12,58 +12,14 @@ jobs:
 
       - restore_cache:
           keys:
-          - deps-{{ checksum "package.json" }}
-          - deps-
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
 
-      - run:
-          name: Set PATH
-          command: echo 'export PATH=./node_modules/.bin:$PATH' >> $BASH_ENV
-
-      - run:
-          name: Install dependencies
-          working_directory: .
-          command: |
-            npm install
-
-      - run:
-          name: Make build faster!
-          command: |
-            if [ ! -d sysconfcpus/bin ];
-            then
-              git clone https://github.com/obmarg/libsysconfcpus.git;
-              cd libsysconfcpus;
-              ./configure --prefix=/tmp/sysconfcpus;
-              make && make install;
-              cd ..;
-            fi
+      - run: npm install
 
       - save_cache:
           paths:
             - node_modules
-          key: deps-{{ checksum "package.json" }}
+          key: v1-dependencies-{{ checksum "package.json" }}
 
-      - run:
-          name: Run static code analysis
-          working_directory: .
-          command: |
-            elm-analyse
-
-      - run:
-          name: Run tests
-          working_directory: .
-          command: |
-            mkdir -p test-reports
-            /tmp/sysconfcpus/bin/sysconfcpus -n 2 npm test
-
-      - store_artifacts:
-          path: test-reports/
-          destination: tr1
-
-      - store_test_results:
-          path: test-reports/
-
-workflows:
-  version: 2
-  build-all:
-    jobs:
-      - build
+      - run: npm test

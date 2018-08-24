@@ -4,16 +4,17 @@
   "description": "An Elm tree library.",
   "private": true,
   "scripts": {
-    "install": "elm-package install -y",
-    "test": "elm-doc-test && elm-test"
+    "install": "elm make",
+    "test": "elm-verify-examples --elm-test-args=\"--compiler ./node_modules/.bin/elm\" && rm -rf elm-stuff && elm-test --compiler ./node_modules/.bin/elm"
   },
   "author": "Allo-Media <contact@allo-media.net>",
   "license": "MIT",
   "devDependencies": {
-    "elm": "^0.18.0",
+    "elm": "^0.19.0",
     "elm-analyse": "^0.14.2",
-    "elm-doc-test": "^4.0.0",
-    "elm-format": "^0.6.1-alpha",
-    "elm-test": "^0.18.12"
+    "elm-format": "^0.8.0",
+    "elm-test": "beta",
+    "elm-verify-examples": "^3.0.0",
+    "request": "^2.88.0"
   }
 }
