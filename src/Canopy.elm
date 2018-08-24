@@ -1,54 +1,13 @@
-module Canopy
-    exposing
-        ( Node(..)
-        , all
-        , any
-        , append
-        , children
-        , decode
-        , encode
-        , filter
-        , flatMap
-        , flatten
-        , foldl
-        , foldr
-        , fromList
-        , get
-        , getAll
-        , leaf
-        , leaves
-        , length
-        , level
-        , map
-        , mapChildren
-        , mapChildrenAt
-        , maximum
-        , minimum
-        , member
-        , node
-        , parent
-        , path
-        , prepend
-        , remove
-        , refine
-        , replaceAt
-        , replaceChildren
-        , replaceChildrenAt
-        , replaceValue
-        , replaceValueAt
-        , seed
-        , seek
-        , siblings
-        , sortBy
-        , sortWith
-        , toList
-        , tuple
-        , updateAt
-        , updateValue
-        , updateValueAt
-        , value
-        , values
-        )
+module Canopy exposing
+    ( Node(..)
+    , node, leaf, append, prepend, remove, seed
+    , value, values, children, length, get, getAll, leaves, level, maximum, minimum, parent, path, seek, siblings
+    , all, any, member
+    , mapChildren, replaceChildren, replaceValue, updateValue
+    , mapChildrenAt, replaceAt, replaceChildrenAt, replaceValueAt, updateAt, updateValueAt
+    , filter, flatMap, flatten, foldl, foldr, map, refine, sortBy, sortWith, tuple
+    , fromList, toList, decode, encode
+    )
 
 {-| A generic [Rose Tree](https://en.wikipedia.org/wiki/Rose_tree).
 
@@ -84,7 +43,7 @@ be performed by consumers of this library.
 
 ## Deep operations
 
-@docs mapChildrenAt, replaceAt, replaceChildrenAt, replaceValueAt, updateAt , updateValueAt
+@docs mapChildrenAt, replaceAt, replaceChildrenAt, replaceValueAt, updateAt, updateValueAt
 
 
 ## Common operations
@@ -163,6 +122,7 @@ append : a -> a -> Node a -> Node a
 append target child n =
     if target == value n then
         n |> replaceChildren (children n ++ [ leaf child ])
+
     else
         n |> mapChildren (append target child)
 
@@ -237,7 +197,8 @@ filter test tree =
                     |> List.filter (value >> test)
                     |> List.filterMap (filter test)
         in
-            tree |> replaceChildren newChildren |> Just
+        tree |> replaceChildren newChildren |> Just
+
     else
         Nothing
 
@@ -431,6 +392,7 @@ level : Int -> Node a -> List (Node a)
 level lvl =
     if lvl <= 0 then
         List.singleton
+
     else
         children >> List.map (level (lvl - 1)) >> List.concat
 
@@ -543,6 +505,7 @@ parent target candidate =
                     Nothing ->
                         if value n == target then
                             Just candidate
+
                         else
                             parent target n
             )
@@ -587,6 +550,7 @@ prepend : a -> a -> Node a -> Node a
 prepend target child n =
     if target == value n then
         n |> replaceChildren (leaf child :: children n)
+
     else
         n |> mapChildren (prepend target child)
 
@@ -655,10 +619,10 @@ refine test tree =
                 |> List.map (\(Node v _) -> tree |> path v |> List.map value)
                 |> List.concat
     in
-        toDelete
-            |> List.filter (\(Node v _) -> List.member v toPreserve |> not)
-            |> List.map value
-            |> List.foldl remove tree
+    toDelete
+        |> List.filter (\(Node v _) -> List.member v toPreserve |> not)
+        |> List.map value
+        |> List.foldl remove tree
 
 
 {-| Replace all Nodes holding a given value with a new Node in a Tree.
@@ -676,6 +640,7 @@ replaceAt : a -> Node a -> Node a -> Node a
 replaceAt target replacement root =
     if value root == target then
         replacement
+
     else
         root |> mapChildren (replaceAt target replacement)
 
@@ -843,6 +808,7 @@ updateAt : a -> (Node a -> Node a) -> Node a -> Node a
 updateAt target update root =
     if value root == target then
         update root
+
     else
         root |> mapChildren (updateAt target update)
 
